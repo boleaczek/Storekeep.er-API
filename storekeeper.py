@@ -27,14 +27,28 @@ class Product(db.Model):
 
 # wszystkie produkty
 @app.route('/all')
-def allProducts():
-	return jsonify([p.to_json() for p in Product.query.all()])
+def showProducts():
+	return jsonify([p.to_json() for p in Product.query.all()]), 200
+
+
+# jeden produkt
+@app.route('/product/<id>')
+def showProduct(id):
+	product = Product.query.filter_by(id=id).first()
+
+	if product is not None:
+		return jsonify(product.to_json()), 200
+	else:
+		return jsonify({
+			'msg': 'nie ma takiego produktu'
+		}), 404
+
 
 
 # strona główna
 @app.route('/')
 def index():
-	return "Hello World"
+	return "Hello World", 200
 	
 
 # uruchomienie aplikacji
