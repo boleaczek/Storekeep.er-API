@@ -1,5 +1,6 @@
-from flask import Flask, url_for, jsonify
+from flask import Flask, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+import json
 
 
 # inicjalizacja i konfiguracja aplikacji
@@ -24,6 +25,9 @@ class Product(db.Model):
 			'desc': self.desc
 		}
 
+	def __init__(self, name, desc):
+		self.name = name
+		self.desc = desc
 
 # wszystkie produkty
 @app.route('/all')
@@ -43,6 +47,13 @@ def showProduct(id):
 			'msg': 'nie ma takiego produktu'
 		}), 404
 
+@app.route('/product', methods=['POST', 'GET'])
+def addProduct():
+	if request.method == 'POST':
+		product = Product(request.json["name"], request.json["desc"])
+		db.session.add(product)
+		db.session.commit()
+		return "Product added", 200
 
 
 # strona główna
