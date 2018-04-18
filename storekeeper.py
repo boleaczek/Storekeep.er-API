@@ -60,6 +60,21 @@ def addProduct():
 		'msg': 'Product added.'	
 	}), 200
 
+@app.route('/product/update/<id>', methods=['POST'])
+def updateProduct(id):
+	product = Product.query.filter_by(id=id).first()
+	json = request.get_json()
+	name = json.get('name')
+	desc = json.get('desc')
+	if name is not None:
+		product.name = name
+	if desc is not None:
+		product.desc = desc
+
+	db.session.commit()
+	return jsonify({
+		'msg': 'Product updated.'
+	}), 200
 
 # usunięcie istniejącego produktu
 @app.route('/product/<id>', methods=['DELETE'])
