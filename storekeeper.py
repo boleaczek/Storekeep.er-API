@@ -1,13 +1,34 @@
 from flask import Flask, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 import json
-
 
 # inicjalizacja i konfiguracja aplikacji
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/baza.db'
+app.config['SQLALCHEMY_BINDS'] = { 'users': 'sqlite:///data/auth.db' }
 db = SQLAlchemy(app)
 
+
+class User(db.Model):
+	__bind_key__ = 'users'
+	id = db.Column(db.Integer, primary_key=True)
+	username = db.Column(db.String(256), nullable=False)
+	password = db.Column(db.String(256), nullable=False)
+
+	def __init__(self, username, password):
+		self.username = username
+		self.password = generate_password_hash(password)
+
+	def to_json(self):
+		return {
+			'id': self.id,
+			'username': self.username,
+			'password hash': self.password
+		}
+
+	def checkPassword(self, password):
+		return check_password_hash(self.password, password)
 
 # model produktu
 class Product(db.Model):
@@ -60,6 +81,7 @@ def addProduct():
 		'msg': 'Product added.'	
 	}), 200
 
+#modyfikacja istniejącego produktu
 @app.route('/product/update/<id>', methods=['POST'])
 def updateProduct(id):
 	product = Product.query.filter_by(id=id).first()
@@ -93,13 +115,11 @@ def deleteProduct(id):
 			'msg': 'Product not found.'
 		}), 404
 
-
 # strona główna
 @app.route('/')
 def index():
 	msg = "Allowed requests: GET /all, GET /product/<id>, POST /product, DELETE /product/<id>"
 	return msg, 200
-	
 
 # uruchomienie aplikacji
 app.run()
