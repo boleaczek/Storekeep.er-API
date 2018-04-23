@@ -1,5 +1,6 @@
 from flask import Flask, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
@@ -8,8 +9,26 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/baza.db'
 app.config['SQLALCHEMY_BINDS'] = { 'users': 'sqlite:///data/auth.db' }
 db = SQLAlchemy(app)
+auth = HTTPBasicAuth()
 
 
+# użytkownicy (to tymczasowe, później będziemy ich ściągać z bazy)
+users = {
+	"kamil": "limak",
+	"bartosz": "denys",
+	"test": "test"
+}
+
+
+# zwraca hasło dla danego loginu
+@auth.get_password
+def get_pwd(user):
+	if user in users:
+		return users.get(user)
+	return None
+
+
+# model użytkownika
 class User(db.Model):
 	__bind_key__ = 'users'
 	id = db.Column(db.Integer, primary_key=True)
@@ -29,6 +48,7 @@ class User(db.Model):
 
 	def checkPassword(self, password):
 		return check_password_hash(self.password, password)
+
 
 # model produktu
 class Product(db.Model):
@@ -50,6 +70,7 @@ class Product(db.Model):
 		self.name = name
 		self.desc = desc
 
+
 # wszystkie produkty
 @app.route('/all', methods=['GET'])
 def showProducts():
@@ -70,6 +91,7 @@ def showProduct(id):
 
 
 # dodanie nowego produktu
+@auth.login_required
 @app.route('/product', methods=['POST'])
 def addProduct():
 	json = request.get_json()
@@ -82,6 +104,7 @@ def addProduct():
 	}), 200
 
 #modyfikacja istniejącego produktu
+@auth.login_required
 @app.route('/product/update/<id>', methods=['POST'])
 def updateProduct(id):
 	product = Product.query.filter_by(id=id).first()
@@ -99,6 +122,7 @@ def updateProduct(id):
 	}), 200
 
 # usunięcie istniejącego produktu
+@auth.login_required
 @app.route('/product/<id>', methods=['DELETE'])
 def deleteProduct(id):
 	product = Product.query.filter_by(id=id).first()
