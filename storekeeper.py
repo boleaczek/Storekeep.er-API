@@ -1,6 +1,7 @@
 from flask import Flask, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
@@ -10,6 +11,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/baza.db'
 app.config['SQLALCHEMY_BINDS'] = { 'users': 'sqlite:///data/auth.db' }
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
+CORS(app)
 
 
 # użytkownicy (to tymczasowe, później będziemy ich ściągać z bazy)
