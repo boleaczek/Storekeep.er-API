@@ -1,6 +1,7 @@
 from flask import Flask, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
@@ -10,6 +11,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/baza.db'
 app.config['SQLALCHEMY_BINDS'] = { 'users': 'sqlite:///data/auth.db' }
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
+CORS(app)
 
 
 # użytkownicy (to tymczasowe, później będziemy ich ściągać z bazy)
@@ -64,7 +66,8 @@ class Product(db.Model):
 		return {
 			'id': self.id,
 			'name': self.name,
-			'desc': self.desc
+			'desc': self.desc,
+			'category': self.category_id
 		}
 
 	category_id = db.Column(db.Integer, db.ForeignKey('category.id'),
@@ -86,6 +89,12 @@ class Category(db.Model):
 	def __repr__(self):
 		return '<Category %r>' % self.name
 
+	def to_json(self):
+		return {
+			'id': self.id,
+			'name': self.name
+		}
+
 	def __init__(self, name):
 		self.name = name
 
@@ -103,7 +112,7 @@ def addCategory():
 	}), 200
 
 # wyswietlenie wszystkich kategorii
-@app.route('/category', methods=['POST'])
+@app.route('/category', methods=['GET'])
 def showCategories():
 	return jsonify([c.to_json() for c in Category.query.all()]), 200
 
