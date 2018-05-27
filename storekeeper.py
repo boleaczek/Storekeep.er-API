@@ -55,6 +55,7 @@ class Product(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(256), nullable=False)
 	desc = db.Column(db.String())
+	picture_ulr = db.Column(db.String(256), nullable=True) 
 
 	def __repr__(self):
 		return '<Product %r>' % self.id
@@ -66,16 +67,56 @@ class Product(db.Model):
 			'desc': self.desc
 		}
 
-	def __init__(self, name, desc):
+	category_id = db.Column(db.Integer, db.ForeignKey('category.id'),
+		nullable=False)
+
+	category = db.relationship('Category',
+		backref=db.backref('products', lazy=True))
+
+	def __init__(self, name, desc, category_id):
 		self.name = name
 		self.desc = desc
+		self.category_id = category_id
 
+#model kategorii
+class Category(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(50), nullable=False)
+	
+	def __repr__(self):
+		return '<Category %r>' % self.name
+
+	def __init__(self, name):
+		self.name = name
+
+# dodanie kategorii
+@auth.login_required
+@app.route('/category', methods=['POST'])
+def addCategory():
+	json = request.get_json()
+	category = Category(json.get('name'))
+	db.session.add(category)
+	db.session.commit()
+	
+	return jsonify({
+		'msg': 'Category added.'	
+	}), 200
+
+# wyswietlenie wszystkich kategorii
+@app.route('/category', methods=['POST'])
+def showCategories():
+	return jsonify([c.to_json() for c in Category.query.all()]), 200
+
+# wyswietlenie produktow w danej kategorii
+@app.route('/category/products/<id>', methods=['GET'])
+def showProductsInCategory(id):
+
+	return jsonify([p.to_json() for p in Product.query.filter_by(category_id=id).all()]), 200
 
 # wszystkie produkty
 @app.route('/all', methods=['GET'])
 def showProducts():
 	return jsonify([p.to_json() for p in Product.query.all()]), 200
-
 
 # jeden produkt
 @app.route('/product/<id>', methods=['GET'])
@@ -89,13 +130,12 @@ def showProduct(id):
 			'msg': 'Product not found.'
 		}), 404
 
-
 # dodanie nowego produktu
 @auth.login_required
 @app.route('/product', methods=['POST'])
 def addProduct():
 	json = request.get_json()
-	product = Product(json.get('name'), json.get('desc'))
+	product = Product(json.get('name'), json.get('desc'), json.get('category_id'))
 	db.session.add(product)
 	db.session.commit()
 
