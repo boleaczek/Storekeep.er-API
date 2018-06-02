@@ -119,8 +119,37 @@ def showCategories():
 # wyswietlenie produktow w danej kategorii
 @app.route('/category/products/<id>', methods=['GET'])
 def showProductsInCategory(id):
-
 	return jsonify([p.to_json() for p in Product.query.filter_by(category_id=id).all()]), 200
+
+#usuniecie kategorii
+@auth.login_required
+@app.route('/category/<id>', methods=['DELETE'])
+def deleteCategory(id):
+	products = Product.query.filter_by(category_id=id).all()
+	
+	for product in products:
+		db.session.delete(product)
+
+	category = Category.query.filter_by(id=id).first()
+	db.session.delete(category)
+	db.session.commit()
+
+	return jsonify({
+		'msg': 'Category deleted.'	
+	}), 200
+
+#modyfikacja kategorii
+@auth.login_required
+@app.route('/category/update/<id>', methods=['POST'])
+def updateCategory(id):
+	name = request.get_json().get('name')
+	category = Category.query.filter_by(id=id).first()
+	category.name = name;
+	db.session.commit()
+
+	return jsonify({
+		'msg': 'Category updated.'	
+	}), 200
 
 # wszystkie produkty
 @app.route('/all', methods=['GET'])
@@ -144,7 +173,7 @@ def showProduct(id):
 @app.route('/product', methods=['POST'])
 def addProduct():
 	json = request.get_json()
-	product = Product(json.get('name'), json.get('desc'), json.get('category_id'))
+	product = Product(json.get('name'), json.get('desc'), json.get('category'))
 	db.session.add(product)
 	db.session.commit()
 
