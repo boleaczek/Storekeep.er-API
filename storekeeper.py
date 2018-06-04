@@ -98,6 +98,7 @@ class Category(db.Model):
 	def __init__(self, name):
 		self.name = name
 
+
 # dodanie kategorii
 @auth.login_required
 @app.route('/category', methods=['POST'])
@@ -144,12 +145,17 @@ def deleteCategory(id):
 def updateCategory(id):
 	name = request.get_json().get('name')
 	category = Category.query.filter_by(id=id).first()
-	category.name = name;
+	category.name = name
 	db.session.commit()
 
 	return jsonify({
 		'msg': 'Category updated.'	
 	}), 200
+
+#wyswietlenie pojedynczej kategorii
+@app.route('/category/<id>', methods=['GET'])
+def getCategory(id):
+	return jsonify(Category.query.filter_by(id=id).first().to_json()), 200
 
 # wszystkie produkty
 @app.route('/all', methods=['GET'])
@@ -189,10 +195,14 @@ def updateProduct(id):
 	json = request.get_json()
 	name = json.get('name')
 	desc = json.get('desc')
+	category = json.get('category')
 	if name is not None:
 		product.name = name
 	if desc is not None:
 		product.desc = desc
+	if category is not None:
+		db.session.delete(product)
+		db.session.add(Product(product.name, product.desc, category))
 
 	db.session.commit()
 	return jsonify({
