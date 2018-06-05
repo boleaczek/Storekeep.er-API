@@ -73,8 +73,6 @@ class Product(db.Model):
 	category_id = db.Column(db.Integer, db.ForeignKey('category.id'),
 		nullable=False)
 
-	category = db.relationship('Category',
-		backref=db.backref('products', lazy=True))
 
 	def __init__(self, name, desc, category_id):
 		self.name = name
@@ -86,6 +84,9 @@ class Category(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(50), nullable=False)
 	
+	product = db.relationship('Product',
+		backref=db.backref('category', lazy=True))
+
 	def __repr__(self):
 		return '<Category %r>' % self.name
 
@@ -201,8 +202,7 @@ def updateProduct(id):
 	if desc is not None:
 		product.desc = desc
 	if category is not None:
-		db.session.delete(product)
-		db.session.add(Product(product.name, product.desc, category))
+		product.category = Category.query.filter_by(id=category).first()
 
 	db.session.commit()
 	return jsonify({
