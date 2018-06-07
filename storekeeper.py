@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from flask import Flask, url_for, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
