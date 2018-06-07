@@ -157,7 +157,14 @@ def updateCategory(id):
 #wyswietlenie pojedynczej kategorii
 @app.route('/category/<id>', methods=['GET'])
 def getCategory(id):
-	return jsonify(Category.query.filter_by(id=id).first().to_json()), 200
+	category = Category.query.filter_by(id=id).first()
+	
+	if category is not None:
+		return jsonify(category.to_json()), 200
+	else:
+		return jsonify({
+			'msg': 'Category not found'
+		}), 404
 
 # wszystkie produkty
 @app.route('/all', methods=['GET'])
