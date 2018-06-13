@@ -106,13 +106,19 @@ class Category(db.Model):
 @app.route('/category', methods=['POST'])
 def addCategory():
 	json = request.get_json()
-	category = Category(json.get('name'))
-	db.session.add(category)
-	db.session.commit()
+	categoryName = json.get('name')
+	if validateText(categoryName, 256):
+		category = Category(categoryName)
+		db.session.add(category)
+		db.session.commit()
 	
-	return jsonify({
-		'msg': 'Category added.'	
-	}), 200
+		return jsonify({
+			'msg': 'Category added.'	
+		}), 200
+	else:
+		return jsonify({
+			'msg': 'Invalid category data.'
+		}), 400
 
 # wyswietlenie wszystkich kategorii
 @app.route('/category', methods=['GET'])
@@ -183,15 +189,44 @@ def showProduct(id):
 			'msg': 'Product not found.'
 		}), 404
 
+def validateText(text, allowed_length):
+	if(text.strip() != '' and len(text) <= allowed_length):
+		return True
+	else:
+		return False	
+
+def isProductValid(name, desc):
+	if(validateText(name, 256) == False):
+		return False
+	if(validateText(desc, 1000) == False):
+		return False
+	return True
+
+def getProductDataFromJson(request):
+	json = request.get_json()
+	return(json.get('name'), json.get('desc'), json.get('category'))
+
 # dodanie nowego produktu
 @auth.login_required
 @app.route('/product', methods=['POST'])
 def addProduct():
-	json = request.get_json()
-	product = Product(json.get('name'), json.get('desc'), json.get('category'))
-	db.session.add(product)
-	db.session.commit()
+	(name, desc, category) = getProductDataFromJson(request)
+	category = Category.query.filter_by(id=category).first()
+	
+	if category is None:
+		return jsonify({
+			'msg':'Category not found'
+		}), 404
 
+	if isProductValid(name, desc):
+		product = Product(name, desc, category.id)
+		db.session.add(product)
+		db.session.commit()
+	else:
+		return jsonify({
+				'msg':'Product data not valid.'
+			}), 400
+	
 	return jsonify({
 		'msg': 'Product added.'	
 	}), 200
@@ -201,16 +236,31 @@ def addProduct():
 @app.route('/product/update/<id>', methods=['POST'])
 def updateProduct(id):
 	product = Product.query.filter_by(id=id).first()
-	json = request.get_json()
-	name = json.get('name')
-	desc = json.get('desc')
-	category = json.get('category')
-	if name is not None:
+	if product is None:
+		return jsonify({
+			'msg':'Product not found.'
+		}), 404
+
+	(name, desc, category) = getProductDataFromJson(request)
+	
+	invalidProductDataResult = jsonify({'msg':'Invalid product data'}), 400
+
+	if name is not None and validateText(name, 256):
 		product.name = name
-	if desc is not None:
+	else:
+		return invalidProductDataResult
+	if desc is not None and validateText(name, 1000):
 		product.desc = desc
+	else:
+		return invalidProductDataResult
 	if category is not None:
-		product.category = Category.query.filter_by(id=category).first()
+		categorySearchResult = Category.query.filter_by(id=category).first()
+		if categorySearchResult is not None:
+			product.category = categorySearchResult
+		else:
+			return jsonify({
+				'msg':'Category not found.'
+			}),404
 
 	db.session.commit()
 	return jsonify({
